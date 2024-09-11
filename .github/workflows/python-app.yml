@@ -53,3 +53,13 @@ jobs:
 
     - name: Push Docker image
       run: docker tag flask-app "${{ secrets.DOCKER_USERNAME }}"/flask-app:latest && docker push "${{ secrets.DOCKER_USERNAME }}"/flask-app:latest
+
+  post:
+    needs: build   # This ensures docker job runs only if build succeeds
+    runs-on: self-hosted
+    steps:
+        - name: Cleanup Docker containers and images
+          run: |
+            docker stop ${{ env.CONTAINER_ID }}
+            docker rm ${{ env.CONTAINER_ID }}
+            docker rmi flask-app
