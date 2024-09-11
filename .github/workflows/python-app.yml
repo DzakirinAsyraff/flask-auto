@@ -1,0 +1,54 @@
+name: Flask CI with Docker
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      run: sudo apt-get update && sudo apt-get install python3-venv -y
+
+    - name: Install dependencies
+      run: |
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+
+    - name: Run tests
+      run: |
+        source venv/bin/activate
+        pytest
+
+  docker:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Build Docker image
+      run: docker build -t flask-app .
+
+    - name: Run Docker container and test
+      run: |
+        docker run -d -p 5000:5000 flask-app
+        sleep 5  # Wait for the container to be ready
+        curl http://localhost:5000
+
+    # Optional: Push to Docker Hub
+    - name: Log in to Docker Hub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    - name: Push Docker image
+      run: docker tag flask-app your_dockerhub_username/flask-app:latest && docker push your_dockerhub_username/flask-app:latest
